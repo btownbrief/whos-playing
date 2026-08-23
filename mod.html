@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Who's Playing — back room</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* Linked from nowhere. Same tokens as the app, none of the chrome. */
+    .wrap { padding-bottom: 60px; }
+    .gate { display: flex; gap: 10px; margin: 16px 0 6px; flex-wrap: wrap; }
+    .gate .input { flex: 1 1 16rem; width: auto; }
+    .row-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+    .row-actions .btn { font-size: 14px; padding: 6px 12px; }
+    .priv { font-size: 13px; color: var(--ink-3); margin-top: 6px; word-break: break-all; }
+    .flag { color: var(--bad); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="top"><div><h1>Back room</h1><p class="sub">Calls on the board, reports, and suggested games.</p></div></header>
+    <form class="gate" id="gate">
+      <label class="sr-only" for="secret">Moderator secret</label>
+      <input class="input" type="password" id="secret" autocomplete="current-password" placeholder="moderator secret">
+      <button class="btn primary" type="submit">Open</button>
+      <button class="btn" type="button" id="forget">Forget</button>
+    </form>
+    <p class="status" id="status"></p>
+    <div class="list" id="list"></div>
+  </main>
+
+  <script type="module">
+    import { backend, explain } from './js/net.js';
+    import { sportName, pickupSportName, postMeta, doorLabel, timeAgo } from './js/core.js';
+
+    const $ = (id) => document.getElementById(id);
+    const be = backend();
+    const KEY = 'wp-mod'; // sessionStorage only: survives a reload of this tab, nothing else
+    const say = (m) => { $('status').textContent = m; };
+    const secret = () => $('secret').value.trim();
+    function h(tag, attrs = {}, ...kids) {
+      const el = document.createElement(tag);
+      for (const [k, v] of Object.entries(attrs)) {
+        if (v == null || v === false) continue;
+        if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+        else if (k === 'class') el.className = v; else el.setAttribute(k, v);
+      }
+      for (const kid of kids.flat()) if (kid != null && kid !== false) el.append(kid.nodeType ? kid : String(kid));
+      return el;
+    }
+
+    async function act(fn, args, then) {
+      try { await be.rpc(fn, { p_secret: secret(), ...args }); await load(); if (then) say(then); }
+      catch (e) { say(explain(e)); }
+    }
+
+    async function load() {
+      const s = secret();
+      if (!s) { say('Enter the secret from the SQL file.'); return; }
+      try { sessionStorage.setItem(KEY, s); } catch { /* fine */ }
+      say('Looking…');
+      let q;
+      try { q = await be.rpc('wp_mod_queue', { p_secret: s }); }
+      catch (e) { say(explain(e)); return; }
+      const list = $('list'); list.textContent = '';
+      const now = Date.now();
+      say(`${q.posts.length} on the board · ${q.suggestions.length} suggestions waiting · ${q.approved.length} approved`);
+
+      list.append(h('div', { class: 'group-head' }, 'Suggested games waiting'));
+      if (!q.suggestions.length) list.append(h('p', { class: 'status' }, 'None.'));
+      for (const s of q.suggestions) list.append(suggestionCard(s, true));
+
+      list.append(h('div', { class: 'group-head' }, 'Calls on the board (reported first)'));
+      if (!q.posts.length) list.append(h('p', { class: 'status' }, 'None.'));
+      for (const p of q.posts) {
+        list.append(h('article', { class: `card${p.status === 'hidden' ? ' closed' : ''}` },
+          h('div', { class: 'who' }, h('span', { class: 'name' }, p.name), h('span', { class: 'sport' }, sportName(p.sport)),
+            p.status === 'hidden' ? h('span', { class: 'tag' }, 'hidden') : null,
+            p.reports ? h('span', { class: 'tag flag' }, `${p.reports} report${p.reports === 1 ? '' : 's'}`) : null,
+            p.women_only ? h('span', { class: 'tag' }, 'Women only') : null),
+          h('div', { class: 'meta' }, postMeta(p)),
+          p.note ? h('p', { class: 'note' }, p.note) : null,
+          h('div', { class: 'priv' }, `${timeAgo(p.created_at, now)} · ${p.reply_count} replies · ${p.email || 'no email'}`),
+          h('div', { class: 'row-actions' },
+            p.status === 'hidden'
+              ? h('button', { class: 'btn', onclick: () => act('wp_mod_post', { p_post: p.id, p_action: 'restore' }, 'Restored.') }, 'Restore')
+              : h('button', { class: 'btn', onclick: () => act('wp_mod_post', { p_post: p.id, p_action: 'hide' }, 'Hidden.') }, 'Hide'),
+            h('button', { class: 'btn danger', onclick: () => { if (confirm('Delete this call and its replies for good?')) act('wp_mod_post', { p_post: p.id, p_action: 'delete' }, 'Deleted.'); } }, 'Delete'))));
+      }
+
+      list.append(h('div', { class: 'group-head' }, 'Approved suggestions (live on the board)'));
+      if (!q.approved.length) list.append(h('p', { class: 'status' }, 'None.'));
+      for (const s of q.approved) list.append(suggestionCard(s, false));
+    }
+
+    function suggestionCard(s, pending) {
+      return h('article', { class: 'card pick' },
+        h('div', { class: 'name' }, s.name),
+        h('div', { class: 'venue' }, `${pickupSportName(s.sport)} · ${s.venue}`),
+        h('div', { class: 'sched' }, s.schedule),
+        s.note ? h('p', { class: 'note' }, s.note) : null,
+        h('div', { class: 'row' }, h('span', { class: `door ${s.door}` }, doorLabel(s.door)),
+          s.link ? h('a', { class: 'src', href: s.link, target: '_blank', rel: 'noopener' }, 'Check the link ↗') : h('span', { class: 'cost' }, 'no link given')),
+        h('div', { class: 'row-actions' },
+          pending ? h('button', { class: 'btn primary', onclick: () => act('wp_mod_suggest', { p_id: s.id, p_action: 'approve' }, 'Approved — it is on the board now.') }, 'Approve') : null,
+          pending ? h('button', { class: 'btn', onclick: () => act('wp_mod_suggest', { p_id: s.id, p_action: 'reject' }, 'Rejected.') }, 'Reject') : null,
+          h('button', { class: 'btn danger', onclick: () => { if (confirm('Delete this suggestion?')) act('wp_mod_suggest', { p_id: s.id, p_action: 'delete' }, 'Deleted.'); } }, 'Delete')));
+    }
+
+    $('gate').addEventListener('submit', (e) => { e.preventDefault(); load(); });
+    $('forget').addEventListener('click', () => { try { sessionStorage.removeItem(KEY); } catch {} $('secret').value = ''; $('list').textContent = ''; say('Forgotten.'); });
+    try { const s = sessionStorage.getItem(KEY); if (s) { $('secret').value = s; load(); } } catch { /* fine */ }
+  </script>
+</body>
+</html>

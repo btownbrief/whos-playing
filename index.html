@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <title>Who's Playing — partners and pickup games in Burlington</title>
+  <meta name="description" content="Find someone to play with in Burlington, Vermont — tennis, pickleball, climbing, running, skiing and more — and see where the standing pickup games are.">
+
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Who's Playing">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="BTown Brief">
+  <meta property="og:title" content="Who's Playing — Burlington">
+  <meta property="og:description" content="Find someone to play with, or find the game. Partners and pickup sports in Burlington, Vermont.">
+  <meta name="twitter:card" content="summary">
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <div>
+        <h1>Who's Playing</h1>
+        <p class="sub">Partners and pickup games in Burlington.</p>
+      </div>
+      <button class="mine" id="open-mine" type="button" data-badge="0">Mine</button>
+    </header>
+
+    <div class="seg" role="tablist" aria-label="Board">
+      <button type="button" role="tab" id="tab-partners" aria-pressed="true" data-view="partners">Looking to play</button>
+      <button type="button" role="tab" id="tab-pickup" aria-pressed="false" data-view="pickup">Pickup games</button>
+    </div>
+
+    <div class="chips" id="chips" role="group" aria-label="Sport"></div>
+
+    <div class="list" id="list" aria-live="polite"></div>
+    <p class="status" id="status"></p>
+
+    <footer class="foot-note">
+      <p id="foot-copy">Meet somewhere public the first time, show up when you say you will, and tell them if you can't. <a href="#" id="open-rules">Ground rules</a></p>
+      <p>A <a href="https://www.btownbrief.com" rel="noopener">Btown Brief</a> thing. Calls stay up 14 days. Nothing here is vetted — use your judgment, especially in the backcountry.</p>
+    </footer>
+  </main>
+
+  <div class="fab-wrap"><button class="fab" id="fab" type="button">I'm looking to play</button></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- Sheets are built by js/app.js inside these dialogs -->
+  <dialog class="sheet" id="sheet-post" aria-labelledby="post-title"><div class="sheet-inner" id="post-inner"></div></dialog>
+  <dialog class="sheet" id="sheet-reply" aria-labelledby="reply-title"><div class="sheet-inner" id="reply-inner"></div></dialog>
+  <dialog class="sheet" id="sheet-suggest" aria-labelledby="suggest-title"><div class="sheet-inner" id="suggest-inner"></div></dialog>
+  <dialog class="sheet" id="sheet-mine" aria-labelledby="mine-title"><div class="sheet-inner" id="mine-inner"></div></dialog>
+  <dialog class="sheet" id="sheet-rules" aria-labelledby="rules-title">
+    <div class="sheet-inner">
+      <div class="grab"></div>
+      <div class="sheet-head"><h2 id="rules-title">Ground rules</h2><button class="close" type="button" data-close>Done</button></div>
+      <ol class="rules">
+        <li>Meet somewhere public the first time. Courts, the gym, the trailhead.</li>
+        <li>Show up when you said you would. If you can't, say so — early.</li>
+        <li>Be honest about your level. A mismatch wastes both your evenings.</li>
+        <li>Nobody here is vetted by anyone. Trust your gut; report anything off.</li>
+        <li>Backcountry partners: confirm certs and gear in person before you skin.</li>
+        <li>Only the person who posted a call sees the replies to it. Your contact info never appears on the board.</li>
+      </ol>
+    </div>
+  </dialog>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#146fe6"/>
+  <!-- two figures, side by side: the whole idea in one glyph -->
+  <circle cx="186" cy="170" r="44" fill="#fff"/>
+  <circle cx="326" cy="170" r="44" fill="#fff"/>
+  <path d="M110 400c0-72 36-118 76-118s76 46 76 118z" fill="#fff"/>
+  <path d="M250 400c0-72 36-118 76-118s76 46 76 118z" fill="#fff" opacity=".82"/>
+</svg>

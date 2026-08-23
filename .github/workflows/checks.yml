@@ -1,0 +1,21 @@
+# Core + fake-backend tests and a syntax check on every push/PR.
+name: checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Core and backend-mirror tests
+        run: node --test scripts/test-core.mjs
+      - name: Syntax-check every module
+        run: for f in js/*.js; do node --check "$f"; done
+      - name: Pickup data is valid and sourced
+        run: node scripts/check-pickup.mjs
