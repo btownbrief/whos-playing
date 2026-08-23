@@ -264,7 +264,7 @@ begin
     set name = excluded.name, note = excluded.note, contact = excluded.contact,
         created_at = now(), seen = false, notified = false
   returning id into v_id;
-  return jsonb_build_object('id', v_id, 'has_email', p.email <> '');
+  return jsonb_build_object('id', v_id);
 end $$;
 
 -- Everything this device owns: its calls with their replies (the only
@@ -298,13 +298,16 @@ begin
   return jsonb_build_object('posts', v_posts, 'sent', v_sent, 'suggestions', v_sugg);
 end $$;
 
--- Cheap badge check: how many replies to this device's open calls are unseen.
+-- Cheap badge check: how many replies to this device's calls (open or
+-- closed) it hasn't looked at yet.
 create or replace function public.wp_mine_peek(p_token text) returns jsonb
-language sql stable security definer set search_path = public as $$
-  select jsonb_build_object('unseen', (
+language plpgsql stable security definer set search_path = public as $$
+begin
+  perform wp_check_token(p_token);
+  return jsonb_build_object('unseen', (
     select count(*) from wp_replies r join wp_posts p on p.id = r.post_id
      where p.token_hash = wp_hash(p_token) and r.seen = false));
-$$;
+end $$;
 
 create or replace function public.wp_close(p_post uuid, p_token text) returns jsonb
 language plpgsql security definer set search_path = public as $$
@@ -386,27 +389,48 @@ $$;
 -- bcrypt hash does, and you make that hash yourself.
 -- 1. Pick a long random string (a password manager's "generate" is perfect).
 -- 2. In the Supabase SQL editor run:
---      select extensions.crypt('YOUR-SECRET-HERE', extensions.gen_salt('bf', 10));
---    and copy the result (it starts with $2a$10$).
+--      select extensions.crypt('YOUR-SECRET-HERE', extensions.gen_salt('bf', 12));
+--    and copy the result (it starts with $2a$12$). If that errors with
+--    "function extensions.crypt does not exist", run the pgcrypto line at
+--    the top of this file first, then try again.
 -- 3. Paste that result between the quotes below, then run this whole file.
 -- 4. Keep the plaintext in your password manager; mod.html asks for it.
 create or replace function public.wp_mod_hash() returns text
 language sql immutable as $$ select 'CHANGE-ME-PASTE-A-BCRYPT-HASH-HERE'::text; $$;
 revoke all on function public.wp_mod_hash() from public, anon, authenticated;
 
+-- Wrong guesses are counted; 20 in 15 minutes shuts the gate for everyone
+-- (including you) until they age out. bcrypt is already slow; this makes a
+-- scripted guess over the public RPC pointless. NOTE: the three wp_mod_*
+-- functions RETURN {"error":"bad_secret"} rather than raising — a raise would
+-- roll back the failure row along with everything else, and the counter
+-- would never persist. js/net.js turns that body into the same NetError.
+create table if not exists public.wp_mod_fails (at timestamptz not null default now());
+alter table public.wp_mod_fails enable row level security;
+revoke all on table public.wp_mod_fails from anon, authenticated;
+
 create or replace function public.wp_mod_ok(p_secret text) returns boolean
-language sql stable security definer set search_path = public as $$
-  select coalesce(p_secret, '') <> ''
-     and wp_mod_hash() like '$2%'     -- an unedited placeholder opens nothing
-     and extensions.crypt(p_secret, wp_mod_hash()) = wp_mod_hash();
-$$;
+language plpgsql security definer set search_path = public as $$
+declare good boolean;
+begin
+  if coalesce(p_secret, '') = '' or wp_mod_hash() not like '$2%' then   -- an unedited placeholder opens nothing
+    return false;
+  end if;
+  delete from wp_mod_fails where at < now() - interval '15 minutes';
+  if (select count(*) from wp_mod_fails) >= 20 then
+    return false;
+  end if;
+  good := extensions.crypt(p_secret, wp_mod_hash()) = wp_mod_hash();
+  if not good then insert into wp_mod_fails default values; end if;
+  return good;
+end $$;
 revoke all on function public.wp_mod_ok(text) from public, anon, authenticated;
 
 create or replace function public.wp_mod_queue(p_secret text) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare v_posts jsonb; v_pending jsonb; v_approved jsonb;
 begin
-  if not wp_mod_ok(p_secret) then raise exception using message = 'bad_secret'; end if;
+  if not wp_mod_ok(p_secret) then return jsonb_build_object('error', 'bad_secret'); end if;
   perform wp_sweep();
   select coalesce(jsonb_agg(wp_public(p) || jsonb_build_object('reports', p.reports, 'email', p.email)
                             order by p.reports desc, p.created_at desc), '[]'::jsonb)
@@ -421,7 +445,7 @@ end $$;
 create or replace function public.wp_mod_post(p_secret text, p_post uuid, p_action text) returns jsonb
 language plpgsql security definer set search_path = public as $$
 begin
-  if not wp_mod_ok(p_secret) then raise exception using message = 'bad_secret'; end if;
+  if not wp_mod_ok(p_secret) then return jsonb_build_object('error', 'bad_secret'); end if;
   if not exists (select 1 from wp_posts where id = p_post) then raise exception using message = 'not_found'; end if;
   if p_action = 'delete' then
     delete from wp_posts where id = p_post;
@@ -439,7 +463,7 @@ end $$;
 create or replace function public.wp_mod_suggest(p_secret text, p_id uuid, p_action text) returns jsonb
 language plpgsql security definer set search_path = public as $$
 begin
-  if not wp_mod_ok(p_secret) then raise exception using message = 'bad_secret'; end if;
+  if not wp_mod_ok(p_secret) then return jsonb_build_object('error', 'bad_secret'); end if;
   if not exists (select 1 from wp_suggestions where id = p_id) then raise exception using message = 'not_found'; end if;
   if p_action = 'approve' then update wp_suggestions set status = 'approved' where id = p_id;
   elsif p_action = 'reject' then update wp_suggestions set status = 'rejected' where id = p_id;
@@ -464,6 +488,15 @@ revoke all on function public.wp_mod_post(text, uuid, text) from public;
 revoke all on function public.wp_mod_suggest(text, uuid, text) from public;
 revoke all on function public.wp_sweep() from public, anon, authenticated;
 revoke all on function public.wp_public(wp_posts) from public, anon, authenticated;
+-- pure helpers: nothing to leak, but nobody outside needs them either
+revoke all on function public.wp_hash(text) from public, anon, authenticated;
+revoke all on function public.wp_check_token(text) from public, anon, authenticated;
+revoke all on function public.wp_clean(text, int) from public, anon, authenticated;
+revoke all on function public.wp_clean_contact(text) from public, anon, authenticated;
+revoke all on function public.wp_valid_sport(text) from public, anon, authenticated;
+revoke all on function public.wp_level_count(text) from public, anon, authenticated;
+revoke all on function public.wp_valid_pickup_sport(text) from public, anon, authenticated;
+revoke all on function public.wp_valid_place(text) from public, anon, authenticated;
 grant execute on function public.wp_board() to anon;
 grant execute on function public.wp_post(text, jsonb) to anon;
 grant execute on function public.wp_reply(uuid, text, jsonb) to anon;

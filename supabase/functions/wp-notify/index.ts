@@ -3,7 +3,12 @@
 // simply wait under "Mine", which is the documented baseline.
 //
 // Deploy (once, from the repo root, with the Supabase CLI logged in):
-//   supabase functions deploy wp-notify --project-ref jnouvwxomrcffqwilqkq
+//   supabase functions deploy wp-notify --no-verify-jwt --project-ref jnouvwxomrcffqwilqkq
+// --no-verify-jwt because the browser sends the publishable key, not a user
+// JWT; the function trusts nothing from the caller anyway — it only acts on
+// a reply row that exists and hasn't been notified yet. After deploying,
+// send one test reply and check the function logs once: the client
+// swallows every failure, so a misconfiguration would otherwise be silent.
 //   supabase secrets set RESEND_API_KEY=re_xxx NOTIFY_FROM="Who's Playing <hello@btownbrief.com>"
 // The function runs with the service role (default for edge functions) so
 // it can read the private email + contact columns the public RPCs never
@@ -16,6 +21,7 @@ const APP_URL = 'https://play.btownbrief.com/whos-playing/';
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 const ok = (body: unknown) => new Response(JSON.stringify(body), { headers: { ...cors, 'Content-Type': 'application/json' } });
 

@@ -101,7 +101,7 @@ test('backend: post → board → reply → mine → close, with privacy intact'
   assert.equal(board[0].reply_count, 0);
   await assert.rejects(be.rpc('wp_reply', { p_post: id, p_token: tok('a'), p_reply: { name: 'Me', note: 'hi', contact: 'me@example.com' } }), /own_post/);
   const r = await be.rpc('wp_reply', { p_post: id, p_token: tok('b'), p_reply: { name: 'Dan', note: 'Tuesday?', contact: '802-555-0100' } });
-  assert.equal(r.has_email, true);
+  assert.ok(r.id, 'reply returns an id');
   assert.equal((await be.rpc('wp_board'))[0].reply_count, 1);
   const mine = await be.rpc('wp_mine', { p_token: tok('a') });
   assert.equal(mine.posts[0].replies[0].contact, '802-555-0100');

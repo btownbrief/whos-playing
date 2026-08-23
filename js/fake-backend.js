@@ -101,12 +101,12 @@ export class FakeBackend {
       throw new BackendError('slow_down');
     }
     if (existing) {
-      Object.assign(existing, v.value, { created_at: this.iso(), seen: false });
-      return { id: existing.id, has_email: Boolean(post.email) };
+      Object.assign(existing, v.value, { created_at: this.iso(), seen: false, notified: false });
+      return { id: existing.id };
     }
     const row = { id: uid(), post_id: p_post, token: p_token, ...v.value, created_at: this.iso(), seen: false, notified: false };
     this.replies.push(row);
-    return { id: row.id, has_email: Boolean(post.email) };
+    return { id: row.id };
   }
 
   op_mine({ p_token }) {
@@ -187,9 +187,9 @@ export class FakeBackend {
         .sort((a, b) => b.reports - a.reports || Date.parse(b.created_at) - Date.parse(a.created_at))
         .map((p) => ({ ...this.publicPost(p), reports: p.reports, email: p.email })),
       suggestions: this.suggestions.filter((s) => s.status === 'pending')
-        .map(({ id, name, sport, venue, schedule, door, link, note, created_at }) => ({ id, name, sport, venue, schedule, door, link, note, created_at })),
+        .map(({ id, name, sport, venue, schedule, door, link, note, status, created_at }) => ({ id, name, sport, venue, schedule, door, link, note, status, created_at })),
       approved: this.suggestions.filter((s) => s.status === 'approved')
-        .map(({ id, name, sport, venue, schedule, door, link, note, created_at }) => ({ id, name, sport, venue, schedule, door, link, note, created_at })),
+        .map(({ id, name, sport, venue, schedule, door, link, note, status, created_at }) => ({ id, name, sport, venue, schedule, door, link, note, status, created_at })),
     };
   }
 
@@ -203,7 +203,7 @@ export class FakeBackend {
     } else if (p_action === 'hide') {
       this.posts[i].status = 'hidden';
     } else if (p_action === 'restore') {
-      this.posts[i].status = 'open'; this.posts[i].reports = 0;
+      this.posts[i].status = 'open'; this.posts[i].reports = 0; this.posts[i].closed_at = null;
       this.reports = this.reports.filter((r) => r.post_id !== p_post);
     } else {
       throw new BackendError('bad_action');

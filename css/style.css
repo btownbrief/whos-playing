@@ -207,6 +207,7 @@ dialog.sheet::backdrop { background: rgba(0, 0, 0, .38); backdrop-filter: blur(6
 .opt[aria-pressed="true"] { background: var(--pill); color: var(--pill-ink); }
 .input {
   width: 100%; background: var(--group); border: 0; border-radius: 12px; padding: 12px 14px; font-size: 17px;
+  color: var(--ink); font-weight: 400;
 }
 .input::placeholder { color: var(--ink-3); }
 textarea.input { min-height: 88px; resize: vertical; }

@@ -19,7 +19,8 @@ const store = {
   set(k, v) { try { localStorage.setItem(k, v); } catch { /* fine */ } },
 };
 const myPostIds = () => new Set(JSON.parse(store.get('wp-my-posts', '[]')));
-const rememberMyPost = (id) => { const s = myPostIds(); s.add(id); store.set('wp-my-posts', JSON.stringify([...s].slice(-50))); };
+const demoIds = new Set();
+const rememberMyPost = (id) => { if (isDemo()) { demoIds.add(id); return; } const s = myPostIds(); s.add(id); store.set('wp-my-posts', JSON.stringify([...s].slice(-50))); };
 
 // tiny element builder: h('div', {class:'x', onclick}, 'text', node, ...)
 function h(tag, attrs = {}, ...kids) {
@@ -184,7 +185,8 @@ function openPost(presetSport) {
     const btn = $('post-submit'); btn.disabled = true; btn.textContent = 'Posting…';
     try {
       const { id } = await be.rpc('wp_post', { p_token: token(), p_post: v.value });
-      rememberMyPost(id); rememberName(v.value.name); rememberEmail(v.value.email); store.set('wp-place', v.value.place); store.set('wp-posted', '1');
+      rememberMyPost(id);
+      if (!isDemo()) { rememberName(v.value.name); rememberEmail(v.value.email); store.set('wp-place', v.value.place); store.set('wp-posted', '1'); }
       closeSheet('sheet-post');
       state.sport = 'all'; setView('partners');
       toast("Posted. It's on the board for 14 days.");
@@ -225,8 +227,8 @@ function openReply(post) {
     const btn = $('reply-submit'); btn.disabled = true; btn.textContent = 'Sending…';
     try {
       const r = await be.rpc('wp_reply', { p_post: post.id, p_token: token(), p_reply: v.value });
-      rememberName(v.value.name);
-      if (r && r.has_email) notify(r.id);
+      if (!isDemo()) rememberName(v.value.name);
+      if (r) notify(r.id); // the edge function decides whether there's anyone to email
       closeSheet('sheet-reply');
       toast(`Sent. ${post.name} will see your note and contact.`);
       await loadBoard();
@@ -276,7 +278,7 @@ function openSuggest() {
     const btn = $('suggest-submit'); btn.disabled = true; btn.textContent = 'Sending…';
     try {
       await be.rpc('wp_suggest', { p_token: token(), p_suggestion: v.value });
-      store.set('wp-posted', '1');
+      if (!isDemo()) store.set('wp-posted', '1');
       closeSheet('sheet-suggest');
       toast("Thanks. It'll show up once it's checked.");
     } catch (err) {
@@ -323,9 +325,9 @@ async function openMine() {
       if (open) {
         card.append(h('div', { class: 'foot' }, h('span', { class: 'when' }, p.email ? `Alerts to ${p.email}` : 'No email on file — check back here.'),
           h('button', { type: 'button', class: 'btn', onclick: async (e) => {
-            e.currentTarget.disabled = true;
+            const btn = e.currentTarget; btn.disabled = true;
             try { await be.rpc('wp_close', { p_post: p.id, p_token: token() }); toast('Closed. Nice.'); await loadBoard(); openMine(); }
-            catch (err) { toast(explain(err)); e.currentTarget.disabled = false; }
+            catch (err) { toast(explain(err)); btn.disabled = false; }
           } }, 'Found someone')));
       }
       sec.append(card);
@@ -453,7 +455,7 @@ function render() {
         h('div', {}, h('button', { type: 'button', class: 'btn primary', onclick: () => openPost(state.sport) }, "I'm looking to play"))));
       return;
     }
-    const mine = myPostIds();
+    const mine = isDemo() ? demoIds : myPostIds();
     for (const p of rows) list.append(postCard(p, now, mine.has(p.id)));
     if (isDemo()) status.textContent = 'Demo board — sample calls, nothing is saved.';
   } else {

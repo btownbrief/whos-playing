@@ -12,7 +12,7 @@ Partners and pickup games in Burlington, Vermont. Two boards, one screen:
   suggest more, which wait for approval in `mod.html`.
 
 Live (once deployed): https://play.btownbrief.com/whos-playing/ — try
-`?demo=1` for a seeded sample board that saves nothing.
+`?demo=1` for a seeded sample board that saves nothing to the server or this device.
 
 Plain static site, no build step, no accounts. Same Supabase project and
 security model as the rest of the Btown fleet.
@@ -49,12 +49,14 @@ NODE_PATH=/path/to/node_modules node scripts/playtest.mjs   # needs playwright
    Settings → Pages → deploy from branch `main` / root. It appears at
    `play.btownbrief.com/whos-playing/` like every other arcade repo.
 2. **Backend.** Supabase → SQL Editor. First make your moderator hash:
-   `select extensions.crypt('YOUR-SECRET', extensions.gen_salt('bf', 10));`
+   `select extensions.crypt('YOUR-SECRET', extensions.gen_salt('bf', 12));`
+   (if that errors, run `create extension if not exists pgcrypto with schema extensions;` first).
    Paste the result into `wp_mod_hash()` in `supabase/whos-playing-SETUP.sql`,
-   then paste and run the whole file. Until then the partner board says
+   then paste and run the whole file. Use a long random secret — the gate
+   locks for 15 minutes after 20 wrong guesses, but it is reachable by anyone. Until then the partner board says
    "isn't switched on yet" and the pickup board works anyway.
 3. **Back room.** Open `/whos-playing/mod.html`, enter the secret. Bookmark it.
-4. **Optional email alerts.** `supabase functions deploy wp-notify` +
+4. **Optional email alerts.** `supabase functions deploy wp-notify --no-verify-jwt` +
    `supabase secrets set RESEND_API_KEY=… NOTIFY_FROM="Who's Playing <hello@btownbrief.com>"`
    (Resend needs the sending domain verified). Without it, replies simply
    wait under Mine — the app says so.

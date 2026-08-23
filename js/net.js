@@ -63,6 +63,11 @@ async function networkRpc(fn, args) {
     const raw = (body && body.message) || `http_${res.status}`;
     throw new NetError(String(raw).split(':')[0].trim());
   }
+  // the moderator RPCs report a wrong secret as a body, not a raise, so the
+  // server-side failure counter survives (see the SQL); same error to callers
+  if (body && typeof body === 'object' && !Array.isArray(body) && typeof body.error === 'string') {
+    throw new NetError(body.error);
+  }
   return body;
 }
 

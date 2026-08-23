@@ -8,14 +8,16 @@ changes in plain language. Plain static site, no build step, ES modules.
 - **`js/core.js` is pure and that purity is the contract.** No DOM, no
   fetch, no `Date.now()` — time is an argument. Every validator there is
   mirrored one-for-one by `supabase/whos-playing-SETUP.sql` (`wp_clean`,
-  `wp_valid_sport`, `wp_level_count`, `wp_valid_place`, limits, rate
-  limits) and by `js/fake-backend.js`. **Change all three together**, and
+  `wp_valid_sport`, `wp_level_count`, `wp_valid_place`, limits) and by
+  `js/fake-backend.js`; the rate limits live in the SQL and the fake
+  backend (`RATE`), not in core. **Change all three together**, and
   add a case to `scripts/test-core.mjs`. Adding a sport = add to `SPORTS`
   (and `PICKUP_SPORTS` if it's a group game) + the two SQL lists.
 - **Privacy shape is load-bearing.** `email` on a post and `contact` on a
   reply are returned ONLY by `wp_mine` (token-gated) and `wp_mod_queue`
-  (secret-gated). `wp_public()` is the only public projection; never add
-  private columns to it or to `wp_board`. Public text fields are URL-stripped
+  (secret-gated). `wp_public()` is the only public projection of a call
+  (`wp_pickup()` projects approved suggestions, which have no private
+  columns); never add private columns to either or to `wp_board`. Public text fields are URL-stripped
   server-side (`wp_clean`) so the board can't become a link farm.
 - **The device token is the only identity.** 32 hex chars minted in
   localStorage, stored hashed (sha256) server-side, never shown. There is no
