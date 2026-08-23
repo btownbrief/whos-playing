@@ -480,7 +480,10 @@ async function loadBoard() {
   catch (err) { state.boardError = err; state.posts = []; }
   render();
 }
+let pickupLoading = false;
 async function loadPickup() {
+  if (pickupLoading) return;
+  pickupLoading = true;
   const [staticRes, liveRes] = await Promise.allSettled([
     fetch('data/pickup.json', { cache: 'no-cache' }).then((r) => r.json()),
     be.rpc('wp_pickup'),
@@ -488,6 +491,7 @@ async function loadPickup() {
   const curated = staticRes.status === 'fulfilled' ? (staticRes.value.entries || []) : [];
   const live = liveRes.status === 'fulfilled' && Array.isArray(liveRes.value) ? liveRes.value : [];
   state.pickup = [...curated, ...live];
+  pickupLoading = false;
   render();
 }
 
