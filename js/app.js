@@ -6,7 +6,7 @@ import {
   SPORTS, PICKUP_SPORTS, INTENTS, TIMES, PLACES, DOORS, LIMITS,
   sportById, sportName, pickupSportName, intentLabel, doorLabel, sportsForMonth, mastheadFor,
   validatePost, validateReply, validateSuggestion,
-  boardView, pickupView, sportCounts, postMeta, timeAgo, daysLeft,
+  boardView, pickupView, sportCounts, postMeta, timeAgo, daysLeft, canRenew, isStale, inSeason,
 } from './core.js';
 import {
   backend, token, isDemo, notify, explain,
@@ -49,6 +49,8 @@ const state = {
   boardError: null,
   pickup: null,
   mine: null,
+  userChoseView: Boolean(params.get('view')),
+  landed: false,
 };
 const be = backend();
 
@@ -157,9 +159,9 @@ function openPost(presetSport) {
     optField({ label: 'When', name: 'times', options: TIMES, value: draft.times, multi: true }),
     optField({ label: 'Where you are based', name: 'place', options: PLACES.map((p) => ({ id: p, label: p })), value: draft.place }),
     textField({ label: 'Your first name', name: 'name', value: rememberedName(), placeholder: 'First name', max: LIMITS.name, autocomplete: 'given-name' }),
+    textField({ label: 'Email', name: 'email', value: rememberedEmail(), type: 'email', placeholder: 'you@example.com', max: LIMITS.email, autocomplete: 'email',
+      hint: "Private — never shown. We email you each reply, with the person's note and contact. No email? You'll have to come back to this exact browser to see who replied." }),
     textField({ label: 'Anything else', name: 'note', placeholder: 'e.g. I have a guest pass at the EDGE. Rusty but fun.', max: LIMITS.note, hint: `${LIMITS.note} characters. No links.` }),
-    textField({ label: 'Email for reply alerts (optional)', name: 'email', value: rememberedEmail(), type: 'email', placeholder: 'you@example.com', max: LIMITS.email, autocomplete: 'email',
-      hint: 'Private. Only used to tell you someone replied. Replies also show up under Mine.' }),
     h('div', { class: 'toggle' },
       h('div', {}, h('div', { class: 't-label' }, 'Only women should reply'), h('div', { class: 't-hint' }, 'Shows as a small tag on your call.')),
       h('button', { type: 'button', class: 'switch', role: 'switch', 'aria-checked': 'false', 'aria-label': 'Only women should reply',
@@ -207,9 +209,10 @@ function openReply(post) {
   form.append(
     h('p', { class: 'sheet-sub' }, `${sportName(post.sport)} · ${postMeta(post)}`),
     post.note ? h('p', { class: 'sheet-sub' }, `“${post.note}”`) : null,
+    post.women_only ? h('p', { class: 'sheet-sub ask' }, `${post.name} asked that only women reply.`) : null,
     textField({ label: 'Your first name', name: 'name', value: rememberedName(), placeholder: 'First name', max: LIMITS.name, autocomplete: 'given-name' }),
     textField({ label: 'Your note', name: 'note', multiline: true, placeholder: 'Hi! Tuesday or Thursday evening works for me — I usually play at Leddy.', max: LIMITS.replyNote }),
-    textField({ label: 'How they can reach you', name: 'contact', placeholder: 'Email, phone, or Instagram', max: LIMITS.contact, hint: `Only ${post.name} sees this.` }),
+    textField({ label: 'How they can reach you', name: 'contact', placeholder: 'Email, phone, or Instagram', max: LIMITS.contact, hint: `Only ${post.name} sees this — on their Mine tab and, if they left an email, in their inbox.` }),
     h('div', { class: 'actions' },
       h('div', { class: 'form-err', id: 'reply-err' }),
       h('button', { class: 'btn primary', type: 'submit', id: 'reply-submit' }, 'Send')),
@@ -323,12 +326,18 @@ async function openMine() {
           h('div', { class: 'r-contact' }, r.contact)));
       }
       if (open) {
+        const renew = canRenew(p, now) ? h('button', { type: 'button', class: 'btn quiet', onclick: async (e) => {
+          const btn = e.currentTarget; btn.disabled = true;
+          try { await be.rpc('wp_renew', { p_post: p.id, p_token: token() }); toast('Extended two more weeks.'); await loadBoard(); openMine(); }
+          catch (err) { toast(explain(err)); btn.disabled = false; }
+        } }, 'Still looking') : null;
         card.append(h('div', { class: 'foot' }, h('span', { class: 'when' }, p.email ? `Alerts to ${p.email}` : 'No email on file — check back here.'),
+          h('span', { class: 'foot-btns' }, renew,
           h('button', { type: 'button', class: 'btn', onclick: async (e) => {
             const btn = e.currentTarget; btn.disabled = true;
             try { await be.rpc('wp_close', { p_post: p.id, p_token: token() }); toast('Closed. Nice.'); await loadBoard(); openMine(); }
             catch (err) { toast(explain(err)); btn.disabled = false; }
-          } }, 'Found someone')));
+          } }, 'Found someone'))));
       }
       sec.append(card);
     }
@@ -338,7 +347,8 @@ async function openMine() {
     const sec = h('div', { class: 'mine-section' }, h('h3', {}, 'Replies you sent'));
     for (const r of mine.sent) {
       sec.append(h('article', { class: `card${r.open ? '' : ' closed'}` },
-        h('div', { class: 'who' }, h('span', { class: 'name' }, `To ${r.to}`), h('span', { class: 'sport' }, sportName(r.sport)), h('span', { class: 'state' }, r.open ? timeAgo(r.created_at, now) : 'call closed')),
+        h('div', { class: 'who' }, h('span', { class: 'name' }, `To ${r.to}`), h('span', { class: 'sport' }, sportName(r.sport)),
+          h('span', { class: 'state' }, r.open ? (r.seen ? `read · ${timeAgo(r.created_at, now)}` : timeAgo(r.created_at, now)) : 'call closed')),
         h('p', { class: 'note' }, r.note)));
     }
     sec.append(h('p', { class: 'hint', style: 'font-size:13px;color:var(--ink-3)' }, "If they're interested, they'll reach out using the contact you left."));
@@ -354,7 +364,7 @@ async function openMine() {
     inner.append(sec);
   }
 }
-function setBadge(n) { $('open-mine').dataset.badge = n > 0 ? '1' : '0'; }
+function setBadge(n) { const b = $('open-mine'); b.dataset.badge = n > 0 ? '1' : '0'; b.textContent = n > 0 ? `Mine · ${n}` : 'Mine'; }
 async function checkBadge() {
   if (store.get('wp-posted') !== '1') return;
   try {
@@ -382,9 +392,13 @@ function renderChips() {
   const now = Date.now();
   let items;
   if (state.view === 'partners') {
+    // only chips that lead somewhere: sports with at least one open call
+    // (plus whatever a deep link asked for), in season order
     const counts = sportCounts(state.posts || [], now);
     items = [{ id: 'all', label: 'All', n: boardView(state.posts || [], { nowMs: now }).length },
-      ...sportsForMonth(new Date().getMonth()).map((s) => ({ id: s.id, label: s.name, n: counts.get(s.id) || 0 }))];
+      ...sportsForMonth(new Date().getMonth())
+        .filter((s) => (counts.get(s.id) || 0) > 0 || s.id === state.sport)
+        .map((s) => ({ id: s.id, label: s.name, n: counts.get(s.id) || 0 }))];
   } else {
     const present = new Map();
     for (const e of state.pickup || []) present.set(e.sport, (present.get(e.sport) || 0) + 1);
@@ -417,8 +431,9 @@ function postCard(p, now, mine) {
   return card;
 }
 
-function pickupCard(e) {
+function pickupCard(e, now = Date.now()) {
   const door = e.door || 'open';
+  const stale = isStale(e, now);
   const card = h('article', { class: 'card pick' },
     h('div', { class: 'name' }, e.name),
     h('div', { class: 'venue' }, e.venue + (e.area ? ` · ${e.area}` : '')),
@@ -428,7 +443,7 @@ function pickupCard(e) {
       h('span', { class: `door ${door}` }, doorLabel(door)),
       e.cost ? h('span', { class: 'cost' }, e.cost) : null,
       e.link ? h('a', { class: 'src', href: e.link, target: '_blank', rel: 'noopener' }, 'Details ↗') : null),
-    e.last_checked ? h('div', { class: 'checked' }, `Checked ${new Date(e.last_checked + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}${e.source === 'community' ? ' · suggested by a reader' : ''}`) : null,
+    e.last_checked ? h('div', { class: `checked${stale ? ' stale' : ''}` }, `${stale ? 'Not checked since' : 'Checked'} ${new Date(e.last_checked + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}${stale ? ' — confirm before you go' : ''}${e.source === 'community' ? ' · suggested by a reader' : ''}`) : null,
   );
   return card;
 }
@@ -438,6 +453,10 @@ function render() {
   const list = $('list'); clear(list);
   const status = $('status'); status.textContent = '';
   const now = Date.now();
+  if (state.view === 'partners' && state.posts && !state.boardError) {
+    const n = boardView(state.posts, { sport: state.sport, nowMs: now }).length;
+    $('announce').textContent = n ? `${n} ${n === 1 ? 'call' : 'calls'}` : 'No calls';
+  }
   if (state.view === 'partners') {
     if (state.boardError) {
       list.append(h('div', { class: 'empty' }, h('strong', {}, explain(state.boardError)),
@@ -451,8 +470,16 @@ function render() {
       const name = state.sport === 'all' ? '' : sportName(state.sport);
       list.append(h('div', { class: 'empty' },
         h('strong', {}, name ? `Nobody's posted for ${name.toLowerCase()} yet` : "Nobody's looking right now"),
-        'Be the first. It takes about twenty seconds.',
+        "Post yours and it's here for the next person who looks. Twenty seconds.",
         h('div', {}, h('button', { type: 'button', class: 'btn primary', onclick: () => openPost(state.sport) }, "I'm looking to play"))));
+      // the floor under the partner board: games you can just show up to
+      const month = new Date().getMonth();
+      const games = pickupView(state.pickup || [], { sport: state.sport, month }).filter((e) => inSeason(e, month)).slice(0, 3);
+      if (games.length) {
+        list.append(h('div', { class: 'group-head' }, 'Meanwhile — games you can just show up to'));
+        for (const e of games) list.append(pickupCard(e, now));
+        list.append(h('p', { class: 'status' }, h('button', { type: 'button', class: 'btn quiet', onclick: () => { state.userChoseView = true; setView('pickup'); } }, 'All pickup games →')));
+      }
       return;
     }
     const mine = isDemo() ? demoIds : myPostIds();
@@ -460,16 +487,18 @@ function render() {
     if (isDemo()) status.textContent = 'Demo board — sample calls, nothing is saved.';
   } else {
     if (state.pickup === null) { status.textContent = 'Loading…'; return; }
-    const rows = pickupView(state.pickup, { sport: state.sport });
+    const month = new Date().getMonth();
+    const rows = pickupView(state.pickup, { sport: state.sport, month });
     if (!rows.length) {
       list.append(h('div', { class: 'empty' }, h('strong', {}, 'Nothing listed yet'), 'Know a standing game? Suggest it and Stephen will check it.',
         h('div', {}, h('button', { type: 'button', class: 'btn primary', onclick: openSuggest }, 'Suggest a game'))));
       return;
     }
-    let last = null;
+    let last = null, offSeason = false;
     for (const e of rows) {
-      if (e.sport !== last) { list.append(h('div', { class: 'group-head' }, pickupSportName(e.sport))); last = e.sport; }
-      list.append(pickupCard(e));
+      if (!offSeason && !inSeason(e, month)) { offSeason = true; last = null; list.append(h('div', { class: 'group-head off' }, 'Not this season')); }
+      if (e.sport !== last) { list.append(h('div', { class: `group-head${offSeason ? ' sub' : ''}` }, pickupSportName(e.sport))); last = e.sport; }
+      list.append(pickupCard(e, now));
     }
     status.textContent = 'Door policy is set by whoever runs the game, not by us. Schedules change — tap Details before you go.';
   }
@@ -480,6 +509,15 @@ async function loadBoard() {
   state.boardError = null;
   try { state.posts = await be.rpc('wp_board'); }
   catch (err) { state.boardError = err; state.posts = []; }
+  // never land on an empty board: first paint with zero calls (or no
+  // backend yet) and no explicit choice shows the pickup games instead
+  if (!state.landed) {
+    state.landed = true;
+    if (!state.userChoseView && state.view === 'partners' && boardView(state.posts, { nowMs: Date.now() }).length === 0) {
+      setView('pickup');
+      return;
+    }
+  }
   render();
 }
 let pickupLoading = false;
@@ -506,7 +544,7 @@ async function loadPickup() {
 }
 
 // ------------------------------------------------------------------- wire
-for (const b of document.querySelectorAll('.seg button')) b.addEventListener('click', () => setView(b.dataset.view));
+for (const b of document.querySelectorAll('.seg button')) b.addEventListener('click', () => { state.userChoseView = true; setView(b.dataset.view); });
 $('fab').addEventListener('click', () => (state.view === 'pickup' ? openSuggest() : openPost(state.sport)));
 $('open-mine').addEventListener('click', openMine);
 $('open-rules').addEventListener('click', (e) => { e.preventDefault(); openSheet('sheet-rules'); });

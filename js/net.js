@@ -106,6 +106,7 @@ export function explain(err) {
     too_many_open: 'You have five open calls already. Close one first.',
     own_post: "That's your own call.",
     not_found: 'That call is gone.',
+    too_soon: 'You can extend a call in its last week.',
     bad_post: "Something's missing — check the highlighted fields.",
     bad_reply: "Something's missing — check the highlighted fields.",
     bad_suggestion: "Something's missing — check the highlighted fields.",

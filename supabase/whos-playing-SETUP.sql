@@ -289,7 +289,7 @@ begin
     from wp_posts p where r.post_id = p.id and p.token_hash = h and r.seen = false;
   select coalesce(jsonb_agg(jsonb_build_object(
       'id', r.id, 'post_id', r.post_id, 'to', p.name, 'sport', p.sport, 'note', r.note,
-      'created_at', r.created_at, 'open', p.status = 'open') order by r.created_at desc), '[]'::jsonb)
+      'created_at', r.created_at, 'open', p.status = 'open', 'seen', r.seen) order by r.created_at desc), '[]'::jsonb)
   into v_sent from wp_replies r join wp_posts p on p.id = r.post_id where r.token_hash = h;
   select coalesce(jsonb_agg(jsonb_build_object(
       'id', s.id, 'name', s.name, 'sport', s.sport, 'venue', s.venue, 'schedule', s.schedule,
@@ -307,6 +307,26 @@ begin
   return jsonb_build_object('unseen', (
     select count(*) from wp_replies r join wp_posts p on p.id = r.post_id
      where p.token_hash = wp_hash(p_token) and r.seen = false));
+end $$;
+
+-- "Still looking": restart the 14 days. Only offered (and only allowed) in
+-- the last 7 days so it can't be used to pin a call to the top every hour.
+create or replace function public.wp_renew(p_post uuid, p_token text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare h text; p wp_posts%rowtype;
+begin
+  perform wp_check_token(p_token);
+  h := wp_hash(p_token);
+  perform wp_sweep();
+  select * into p from wp_posts where id = p_post and token_hash = h;
+  if not found or p.status <> 'open' then
+    raise exception using message = 'not_found';
+  end if;
+  if p.created_at > now() - interval '7 days' then
+    raise exception using message = 'too_soon';
+  end if;
+  update wp_posts set created_at = now() where id = p_post;
+  return '{}'::jsonb;
 end $$;
 
 create or replace function public.wp_close(p_post uuid, p_token text) returns jsonb
@@ -479,6 +499,7 @@ revoke all on function public.wp_post(text, jsonb) from public;
 revoke all on function public.wp_reply(uuid, text, jsonb) from public;
 revoke all on function public.wp_mine(text) from public;
 revoke all on function public.wp_mine_peek(text) from public;
+revoke all on function public.wp_renew(uuid, text) from public;
 revoke all on function public.wp_close(uuid, text) from public;
 revoke all on function public.wp_report(uuid, text) from public;
 revoke all on function public.wp_suggest(text, jsonb) from public;
@@ -502,6 +523,7 @@ grant execute on function public.wp_post(text, jsonb) to anon;
 grant execute on function public.wp_reply(uuid, text, jsonb) to anon;
 grant execute on function public.wp_mine(text) to anon;
 grant execute on function public.wp_mine_peek(text) to anon;
+grant execute on function public.wp_renew(uuid, text) to anon;
 grant execute on function public.wp_close(uuid, text) to anon;
 grant execute on function public.wp_report(uuid, text) to anon;
 grant execute on function public.wp_suggest(text, jsonb) to anon;

@@ -54,6 +54,13 @@ must((await p.textContent('.card .name')) === 'Maya', 'climbing card is Maya');
 must(await p.$('.card .tag:has-text("Women only")'), 'women-only tag shown');
 await shot(p, '02-board-filtered');
 await p.click('.chip:has-text("All")');
+must(!(await p.$('.chip:has-text("Squash")')), 'chips with zero calls are not shown');
+// deep link to an empty sport: chip appears, empty state shows pickup games beneath
+await p.goto(`${base}?demo=1&sport=squash&view=partners`);
+await p.waitForSelector('.empty');
+must(await p.$('.chip:has-text("Squash")'), 'deep-linked empty sport still gets its chip');
+must((await p.$$('.card.pick')).length >= 1, 'empty state shows pickup games for that sport');
+await p.goto(`${base}?demo=1`); await p.waitForSelector('.card');
 
 // ------------------------------------------------------------- post flow
 await p.click('#fab');
@@ -111,6 +118,7 @@ await p.keyboard.press('Escape');
 // ------------------------------------------------------------ pickup
 await p.click('#tab-pickup');
 await p.waitForSelector('.card.pick');
+await p.waitForTimeout(250); // segmented-control highlight transition
 must((await p.$$('.card.pick')).length >= 15, 'pickup board has curated entries');
 must((await p.textContent('.group-head')) === 'Basketball', 'grouped by pickup sport name');
 must((await p.textContent('#fab')) === 'Suggest a game', 'fab relabels');
@@ -142,7 +150,7 @@ p = await page({ dark: true });
 await p.goto(`${base}?demo=1&sport=all`);
 await p.waitForSelector('.card');
 await shot(p, '11-board-dark');
-await p.click('#tab-pickup'); await p.waitForSelector('.card.pick'); await shot(p, '12-pickup-dark');
+await p.click('#tab-pickup'); await p.waitForSelector('.card.pick'); await p.waitForTimeout(250); await shot(p, '12-pickup-dark');
 await p.context().close();
 p = await page({ width: 1280, height: 900 });
 await p.goto(`${base}?demo=1`);
@@ -156,10 +164,12 @@ await p.context().close();
 // has no /rest, so fetch fails or 404s — the board must fail soft either way)
 p = await page();
 await p.goto(base);
-await p.waitForSelector('.empty, .card', { timeout: 8000 });
-must(await p.$('.empty'), 'live mode without backend shows a soft message');
-await p.click('#tab-pickup'); await p.waitForSelector('.card.pick');
-must((await p.$$('.card.pick')).length >= 15, 'pickup board works with no backend');
+await p.waitForSelector('.card.pick, .empty', { timeout: 8000 });
+// with no backend (or no calls) and no explicit choice, first paint is the pickup board
+must((await p.$$('.card.pick')).length >= 15, 'lands on the pickup board when the partner board is empty');
+must((await p.getAttribute('#tab-pickup', 'aria-pressed')) === 'true', 'pickup tab is active');
+await p.click('#tab-partners'); await p.waitForSelector('.empty'); await p.waitForTimeout(250);
+must(await p.$('.empty'), 'partner board fails soft with a message');
 await shot(p, '15-live-not-ready');
 await p.context().close();
 

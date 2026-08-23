@@ -7,7 +7,7 @@ import {
   validateSuggestion, boardView, postMeta, timeAgo, daysLeft, sportCounts, POST_DAYS,
 } from '../js/core.js';
 import { FakeBackend, seedDemo } from '../js/fake-backend.js';
-import { mastheadFor, MASTHEADS } from '../js/core.js';
+import { mastheadFor, MASTHEADS, pickupView, isStale, canRenew } from '../js/core.js';
 
 const T0 = Date.parse('2026-08-23T18:00:00Z');
 const tok = (c) => c.repeat(32);
@@ -180,6 +180,38 @@ test('backend: moderator can hide, restore, delete a call', async () => {
   assert.ok('email' in (await be.rpc('wp_mod_queue', { p_secret: 'pw' })).posts[0]);
   await be.rpc('wp_mod_post', { p_secret: 'pw', p_post: id, p_action: 'delete' });
   assert.equal((await be.rpc('wp_board')).length, 0);
+});
+
+test('pickup view: in-season first, then out-of-season; staleness', () => {
+  const es = [
+    { id: 'a', sport: 'soccer', name: 'Futsal', season: 'cold', last_checked: '2026-08-23' },
+    { id: 'b', sport: 'basketball', name: 'Hoops', season: 'all', last_checked: '2026-01-01' },
+    { id: 'c', sport: 'ultimate', name: 'Frisbee', season: 'warm' },
+  ];
+  assert.deepEqual(pickupView(es, { month: 7 }).map((e) => e.id), ['b', 'c', 'a']);
+  assert.deepEqual(pickupView(es, { month: 0 }).map((e) => e.id), ['b', 'a', 'c']);
+  assert.equal(isStale(es[1], T0), true);
+  assert.equal(isStale(es[0], T0), false);
+  assert.equal(isStale(es[2], T0), false);
+});
+
+test('renew: only in the last week, restarts the clock, owner only', async () => {
+  let now = T0;
+  const be = new FakeBackend({ now: () => now });
+  const { id } = await be.rpc('wp_post', { p_token: tok('a'), p_post: goodPost });
+  assert.equal(canRenew((await be.rpc('wp_board'))[0], now), false);
+  await assert.rejects(be.rpc('wp_renew', { p_post: id, p_token: tok('a') }), /too_soon/);
+  now += 8 * 86400e3;
+  assert.equal(canRenew((await be.rpc('wp_board'))[0], now), true);
+  await assert.rejects(be.rpc('wp_renew', { p_post: id, p_token: tok('b') }), /not_found/);
+  await be.rpc('wp_renew', { p_post: id, p_token: tok('a') });
+  now += 10 * 86400e3;
+  assert.equal((await be.rpc('wp_board')).length, 1, 'renewed call survives past the original expiry');
+  const sent = await be.rpc('wp_reply', { p_post: id, p_token: tok('b'), p_reply: { name: 'B', note: 'hi', contact: 'b@x.com' } });
+  assert.ok(sent.id);
+  assert.equal((await be.rpc('wp_mine', { p_token: tok('b') })).sent[0].seen, false);
+  await be.rpc('wp_mine', { p_token: tok('a') });
+  assert.equal((await be.rpc('wp_mine', { p_token: tok('b') })).sent[0].seen, true, 'replier sees read');
 });
 
 test('demo seed produces a believable board', async () => {

@@ -1,5 +1,5 @@
 {
-  "_note": "Curated standing pickup games around Burlington. Every entry needs a source link that states the schedule; door is what the organizer says, not our guess. Approved reader suggestions are served live by wp_pickup and merged on the client — this file is the verified core. last_checked is the date the link was last read.",
+  "_note": "Curated standing pickup games around Burlington. Every entry needs a source link that states the schedule; door is what the organizer says, not our guess. Approved reader suggestions are served live by wp_pickup and merged on the client — this file is the verified core. last_checked is the date the link was last read. season is warm (Apr–Sep), cold (Oct–Mar) or all; out-of-season entries sink to the bottom, never hide.",
   "entries": [
     {
       "id": "sb-sunday-hoops",
@@ -13,7 +13,8 @@
       "link": "https://www.southburlingtonvt.gov/Calendar.aspx?EID=1334",
       "note": "South Burlington Rec & Parks. 18+, first-timers sign a waiver, no spectators.",
       "source": "curated",
-      "last_checked": "2026-08-23"
+      "last_checked": "2026-08-23",
+      "season": "all"
     },
     {
       "id": "sb-friday-hoops-35",
@@ -27,7 +28,8 @@
       "link": "https://www.southburlingtonvt.gov/Calendar.aspx?EID=1364",
       "note": "South Burlington Rec & Parks. Men 35+, waiver required, no spectators.",
       "source": "curated",
-      "last_checked": "2026-08-23"
+      "last_checked": "2026-08-23",
+      "season": "all"
     },
     {
       "id": "miller-adult-hoops",
@@ -41,7 +43,8 @@
       "link": "https://www.burlingtonvt.gov/Calendar.aspx?EID=3797",
       "note": "Burlington Parks, Recreation & Waterfront.",
       "source": "curated",
-      "last_checked": "2026-08-23"
+      "last_checked": "2026-08-23",
+      "season": "all"
     },
     {
       "id": "sb-monday-futsal",
@@ -55,7 +58,8 @@
       "link": "https://southburlingtonvt.gov/Calendar.aspx?EID=1049",
       "note": "South Burlington Rec & Parks. Co-ed, 18+, all abilities, waiver required.",
       "source": "curated",
-      "last_checked": "2026-08-23"
+      "last_checked": "2026-08-23",
+      "season": "cold"
     },
     {
       "id": "ssvt-sunday-soccer",
@@ -69,7 +73,8 @@
       "link": "https://www.socialsportsvt.com/recreational-pickup-soccer",
       "note": "Social Sports VT. 16+, all levels — register online ahead of time, it isn't walk-up.",
       "source": "curated",
-      "last_checked": "2026-08-23"
+      "last_checked": "2026-08-23",
+      "season": "all"
     },
     {
       "id": "vtu-thursday-mixed",
@@ -83,7 +88,8 @@
       "link": "https://vermontultimate.org/pickup",
       "note": "Vermont Ultimate. Check their site for this week's field.",
       "source": "curated",
-      "last_checked": "2026-08-23"
+      "last_checked": "2026-08-23",
+      "season": "warm"
     },
     {
       "id": "vtu-wednesday-wnb",
@@ -97,7 +103,8 @@
       "link": "https://vermontultimate.org/pickup",
       "note": "Vermont Ultimate. Check their site for this week's field.",
       "source": "curated",
-      "last_checked": "2026-08-23"
+      "last_checked": "2026-08-23",
+      "season": "warm"
     },
     {
       "id": "jacked-volleyball",
@@ -111,7 +118,8 @@
       "link": "https://jackedsports.com/leagues/drop-in/",
       "note": "Jacked Sports & Social Club. Join through their Meetup group or email first.",
       "source": "curated",
-      "last_checked": "2026-08-23"
+      "last_checked": "2026-08-23",
+      "season": "cold"
     },
     {
       "id": "leddy-public-skate",
@@ -125,7 +133,8 @@
       "link": "https://www.burlingtonvt.gov/Calendar.aspx?EID=3140",
       "note": "Burlington Parks, Recreation & Waterfront. Times shift around rink bookings — check the current month.",
       "source": "curated",
-      "last_checked": "2026-08-23"
+      "last_checked": "2026-08-23",
+      "season": "all"
     },
     {
       "id": "leddy-pickleball",
@@ -139,7 +148,8 @@
       "link": "https://www.pickleheads.com/courts/us/vermont/burlington/leddy-park",
       "note": "City courts, lines over the tennis courts. Busy evenings and weekends.",
       "source": "curated",
-      "last_checked": "2026-08-23"
+      "last_checked": "2026-08-23",
+      "season": "warm"
     },
     {
       "id": "sb-monday-pickleball",
@@ -153,7 +163,8 @@
       "link": "https://southburlingtonvt.gov/Calendar.aspx?EID=1264",
       "note": "South Burlington Rec & Parks. Loaner paddles for newcomers. May be limited to South Burlington residents — confirm first.",
       "source": "curated",
-      "last_checked": "2026-08-23"
+      "last_checked": "2026-08-23",
+      "season": "all"
     },
     {
       "id": "miller-pickleball",
@@ -167,7 +178,8 @@
       "link": "https://burlingtonvt.gov/Calendar.aspx?EID=4389",
       "note": "Burlington Parks, Recreation & Waterfront. The level/day grid rotates — check the calendar.",
       "source": "curated",
-      "last_checked": "2026-08-23"
+      "last_checked": "2026-08-23",
+      "season": "all"
     },
     {
       "id": "miller-table-tennis",
@@ -181,7 +193,8 @@
       "link": "https://burlingtonvt.gov/Calendar.aspx?EID=2126",
       "note": "Burlington Parks, Recreation & Waterfront. Three tables.",
       "source": "curated",
-      "last_checked": "2026-08-23"
+      "last_checked": "2026-08-23",
+      "season": "all"
     },
     {
       "id": "edge-racquet-round-robin",
@@ -195,7 +208,8 @@
       "link": "https://edgevt.com/sports-fitness-3/sports/squash-racquetball-handball/",
       "note": "The EDGE Sports & Fitness. No registration for round robins — check in at the front desk. Call (802) 860-3343 for the current time.",
       "source": "curated",
-      "last_checked": "2026-08-23"
+      "last_checked": "2026-08-23",
+      "season": "all"
     },
     {
       "id": "gmbc-wednesday-ride",
@@ -209,7 +223,8 @@
       "link": "https://thegmbc.com/wed-training-rides/",
       "note": "Green Mountain Bicycle Club. Groups of 12 or fewer self-sort by pace; membership not required.",
       "source": "curated",
-      "last_checked": "2026-08-23"
+      "last_checked": "2026-08-23",
+      "season": "warm"
     },
     {
       "id": "gmaa-tuesday-run",
@@ -223,7 +238,8 @@
       "link": "https://gmaa.run/members/gmaa-member-group-runs/",
       "note": "Green Mountain Athletic Association. Listed as a member group run — confirm the guest policy with the organizer first.",
       "source": "curated",
-      "last_checked": "2026-08-23"
+      "last_checked": "2026-08-23",
+      "season": "all"
     },
     {
       "id": "gmaa-thursday-track",
@@ -237,7 +253,8 @@
       "link": "https://gmaa.run/members/gmaa-member-group-runs/",
       "note": "Green Mountain Athletic Association, coached. Check the current season's schedule.",
       "source": "curated",
-      "last_checked": "2026-08-23"
+      "last_checked": "2026-08-23",
+      "season": "all"
     },
     {
       "id": "skirack-thursday-run",
@@ -251,7 +268,8 @@
       "link": "https://vermontrunningcompany.com/runinvt/group-runs/",
       "note": "Listed on Vermont Running Company's group-runs page.",
       "source": "curated",
-      "last_checked": "2026-08-23"
+      "last_checked": "2026-08-23",
+      "season": "all"
     },
     {
       "id": "oge-wednesday-run",
@@ -265,7 +283,8 @@
       "link": "https://vermontrunningcompany.com/runinvt/group-runs/",
       "note": "Listed on Vermont Running Company's group-runs page.",
       "source": "curated",
-      "last_checked": "2026-08-23"
+      "last_checked": "2026-08-23",
+      "season": "all"
     },
     {
       "id": "cragvt-community-climbs",
@@ -279,7 +298,8 @@
       "link": "https://cragvt.org/community-events/",
       "note": "Climbing Resource Access Group of Vermont. Open to any member; you can join at the door. Not guided — bring your own gear and partner.",
       "source": "curated",
-      "last_checked": "2026-08-23"
+      "last_checked": "2026-08-23",
+      "season": "all"
     }
   ]
 }

@@ -4,12 +4,18 @@ Partners and pickup games in Burlington, Vermont. Two boards, one screen:
 
 - **Looking to play** — short public "calls": *Priya · Tennis · 3.5 · Casual ·
   Weekday evenings · South End*. Anyone can reply; only the poster sees the
-  replies (and the replier's contact). Calls last 14 days or until the
-  poster taps "Found someone."
+  replies (and the replier's contact) — under Mine and, if they left an
+  email, in their inbox. Calls last 14 days; in the last week the poster can
+  tap "Still looking" to restart the clock, or "Found someone" to close.
+  Only sports with an open call get a chip; an empty board lands on the
+  pickup games instead, and an empty sport shows the games you could just
+  show up to.
 - **Pickup games** — standing drop-in games a newcomer could actually show
   up to, with the organizer's door policy (Just show up / Ask first /
-  Members / Full right now). Curated in `data/pickup.json`; readers can
-  suggest more, which wait for approval in `mod.html`.
+  Members / Full right now). Curated in `data/pickup.json` with a `season`;
+  out-of-season games sink under "Not this season" (never hidden), and an
+  entry unchecked for 120 days says so. Readers can suggest more, which
+  wait for approval in `mod.html`.
 
 Live (once deployed): https://play.btownbrief.com/whos-playing/ — try
 `?demo=1` for a seeded sample board that saves nothing to the server or this device.
@@ -33,6 +39,7 @@ security model as the rest of the Btown fleet.
 | `scripts/test-core.mjs` | core + backend-mirror tests (`node --test`) |
 | `scripts/check-pickup.mjs` | pickup data stays sourced |
 | `scripts/playtest.mjs` | Playwright run of the real UI in demo mode, with screenshots |
+| `scripts/newsletter-block.mjs` | renders this week's open calls as a Monday-edition block (`--html` for Beehiiv) |
 
 ## Run it
 
@@ -56,17 +63,23 @@ NODE_PATH=/path/to/node_modules node scripts/playtest.mjs   # needs playwright
    locks for 15 minutes after 20 wrong guesses, but it is reachable by anyone. Until then the partner board says
    "isn't switched on yet" and the pickup board works anyway.
 3. **Back room.** Open `/whos-playing/mod.html`, enter the secret. Bookmark it.
-4. **Optional email alerts.** `supabase functions deploy wp-notify --no-verify-jwt` +
+4. **Email alerts — treat as required.** `supabase functions deploy wp-notify --no-verify-jwt` +
    `supabase secrets set RESEND_API_KEY=… NOTIFY_FROM="Who's Playing <hello@btownbrief.com>"`
-   (Resend needs the sending domain verified). Without it, replies simply
-   wait under Mine — the app says so.
+   (Resend needs the sending domain verified). The email carries the reply's
+   note *and* contact, so a poster never has to come back to the browser
+   they posted from. Without it the app still works — replies wait under
+   Mine and the copy says so — but the reply loop is much weaker.
 5. **Register it** (three places, like Table Talk taught us):
    - hub `index.html` + btown-brief `data/catalog.json` (a "Join in" card:
      *Who's Playing — find someone to play with, or find the game*),
    - `btownbrief.github.io/games.json` so the ⌘K palette and arcade know it
      (`{"slug":"whos-playing","name":"Who's Playing","emoji":"🎾","pitch":"Find someone to play with — or find the game. Partners and pickup sports, Burlington only.","section":"local-more","live":true,"leaderboard":false}`),
    - newsletter: link sport-filtered views, e.g. `?sport=pickleball`, `?view=pickup`.
-6. **Keep `data/pickup.json` honest.** Every entry needs a source link that
+6. **Before launch, seed six real calls.** Ask the Meetup / newsletter for
+   sport, level, when, neighborhood; post them (with permission) the morning
+   the link goes out. Never fake posts. Then `node scripts/newsletter-block.mjs`
+   each Monday for the edition block.
+7. **Keep `data/pickup.json` honest.** Every entry needs a source link that
    states the schedule and a `last_checked` date; `scripts/check-pickup.mjs`
    enforces the shape, you enforce the truth. Re-check before each season flips.
 

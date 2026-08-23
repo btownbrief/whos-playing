@@ -41,15 +41,16 @@
       <button class="mine" id="open-mine" type="button" data-badge="0">Mine</button>
     </header>
 
-    <div class="seg" role="tablist" aria-label="Board">
-      <button type="button" role="tab" id="tab-partners" aria-pressed="true" data-view="partners">Looking to play</button>
-      <button type="button" role="tab" id="tab-pickup" aria-pressed="false" data-view="pickup">Pickup games</button>
+    <div class="seg" role="group" aria-label="Board">
+      <button type="button" id="tab-partners" aria-pressed="true" data-view="partners">Looking to play</button>
+      <button type="button" id="tab-pickup" aria-pressed="false" data-view="pickup">Pickup games</button>
     </div>
 
     <div class="chips" id="chips" role="group" aria-label="Sport"></div>
 
-    <div class="list" id="list" aria-live="polite"></div>
+    <div class="list" id="list"></div>
     <p class="status" id="status"></p>
+    <p class="sr-only" id="announce" aria-live="polite"></p>
 
     <footer class="foot-note">
       <p id="foot-copy">Meet somewhere public the first time, show up when you say you will, and tell them if you can't. <a href="#" id="open-rules">Ground rules</a></p>
@@ -74,6 +75,7 @@
         <li>Show up when you said you would. If you can't, say so — early.</li>
         <li>Be honest about your level. A mismatch wastes both your evenings.</li>
         <li>Nobody here is vetted by anyone. Trust your gut; report anything off.</li>
+        <li>This board is for adults, 18 and up.</li>
         <li>Backcountry partners: confirm certs and gear in person before you skin.</li>
         <li>Only the person who posted a call sees the replies to it. Your contact info never appears on the board.</li>
       </ol>

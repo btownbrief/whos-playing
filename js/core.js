@@ -7,6 +7,8 @@
 export const APP = 'whos-playing';
 export const APP_NAME = "Who's Playing";
 export const POST_DAYS = 14;            // an open call lasts this long
+export const RENEW_WITHIN_DAYS = 7;     // "Still looking" is offered in the last week
+export const STALE_AFTER_DAYS = 120;    // a pickup entry unchecked this long says so
 export const LIMITS = {
   name: 24, note: 140, email: 120,
   replyNote: 280, contact: 120,
@@ -194,11 +196,26 @@ export function boardView(posts, { sport = 'all', nowMs }) {
     .filter((p) => sport === 'all' || p.sport === sport)
     .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
 }
-export function pickupView(entries, { sport = 'all' }) {
+// In-season entries first (grouped by sport), then the out-of-season ones
+// under one quiet "Not this season" head. Nothing is ever hidden.
+export const isCold = (month) => month <= 2 || month >= 10;
+export function inSeason(entry, month) {
+  const s = entry.season || 'all';
+  return s === 'all' || (s === 'cold') === isCold(month);
+}
+export function pickupView(entries, { sport = 'all', month = 6 }) {
   const list = (entries || []).filter((e) => sport === 'all' || e.sport === sport);
   const order = new Map(PICKUP_SPORTS.map((s, i) => [s.id, i]));
   return list.sort((a, b) =>
+    Number(inSeason(b, month)) - Number(inSeason(a, month)) ||
     (order.get(a.sport) ?? 99) - (order.get(b.sport) ?? 99) || a.name.localeCompare(b.name));
+}
+export function isStale(entry, nowMs) {
+  if (!entry.last_checked) return false;
+  return nowMs - Date.parse(entry.last_checked + 'T12:00:00Z') > STALE_AFTER_DAYS * 86400000;
+}
+export function canRenew(post, nowMs) {
+  return post.status === 'open' && daysLeft(post, nowMs) <= RENEW_WITHIN_DAYS;
 }
 // Sports that currently have at least one open call, for the chip counts.
 export function sportCounts(posts, nowMs) {

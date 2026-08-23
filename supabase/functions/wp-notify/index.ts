@@ -18,6 +18,14 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const APP_URL = 'https://play.btownbrief.com/whos-playing/';
+// display names for the subject line (edge functions can't import js/core.js)
+const SPORT_NAMES: Record<string, string> = {
+  tennis: 'tennis', pickleball: 'pickleball', running: 'running', climbing: 'climbing', golf: 'golf',
+  'disc-golf': 'disc golf', cycling: 'cycling', swimming: 'open-water swim', paddling: 'kayak / SUP',
+  squash: 'squash', racquetball: 'racquetball', 'table-tennis': 'table tennis', basketball: 'basketball',
+  skiing: 'ski / ride', backcountry: 'backcountry', 'xc-ski': 'cross-country ski', skating: 'skating',
+  hiking: 'hike / snowshoe', other: 'something else',
+};
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -37,29 +45,35 @@ Deno.serve(async (req) => {
     // claim the reply atomically: only the first caller flips notified
     const { data: claimed } = await db.from('wp_replies')
       .update({ notified: true }).eq('id', reply_id).eq('notified', false)
-      .select('id, post_id, name, note').maybeSingle();
+      .select('id, post_id, name, note, contact').maybeSingle();
     if (!claimed) return ok({ sent: false, why: 'already' });
     const { data: post } = await db.from('wp_posts').select('name, sport, email, status').eq('id', claimed.post_id).maybeSingle();
     if (!post || post.status !== 'open' || !post.email) return ok({ sent: false, why: 'no_email' });
 
     const from = Deno.env.get('NOTIFY_FROM') || "Who's Playing <onboarding@resend.dev>";
+    const sport = SPORT_NAMES[post.sport] || post.sport;
+    // The reply — note AND contact — goes in the email. The poster is the only
+    // recipient, so "only Priya sees this" still holds; it just reaches her
+    // where she already is instead of one specific browser.
     const text = [
       `Hi ${post.name},`,
       '',
-      `${claimed.name} replied to your ${post.sport} call on Who's Playing:`,
+      `${claimed.name} replied to your ${sport} call on Who's Playing:`,
       '',
       `  "${claimed.note}"`,
       '',
-      `Their contact details are under Mine, on the phone you posted from: ${APP_URL}`,
+      `  Reach ${claimed.name} at: ${claimed.contact}`,
       '',
-      "Meet somewhere public the first time, and if you've found someone, close the call so others stop replying.",
+      `Everything you've posted is under Mine: ${APP_URL}`,
+      '',
+      "Meet somewhere public the first time. When you've found someone, close the call so others stop replying.",
       '',
       '— Btown Brief',
     ].join('\n');
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from, to: [post.email], subject: `${claimed.name} replied to your ${post.sport} call`, text }),
+      body: JSON.stringify({ from, to: [post.email], subject: `${claimed.name} replied to your ${sport} call`, text }),
     });
     if (!res.ok) {
       // give it back so a later call can retry

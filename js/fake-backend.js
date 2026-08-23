@@ -8,7 +8,7 @@
 // If a rule changes here it must change in the SQL too, and vice versa.
 
 import {
-  POST_DAYS, validatePost, validateReply, validateSuggestion, validToken,
+  POST_DAYS, RENEW_WITHIN_DAYS, validatePost, validateReply, validateSuggestion, validToken,
 } from './core.js';
 
 const RATE = { postsPerDay: 3, openPosts: 5, repliesPerDay: 10, suggestionsPerDay: 3 };
@@ -125,7 +125,7 @@ export class FakeBackend {
       .map(({ id, name, sport, venue, schedule, door, status, created_at }) => ({ id, name, sport, venue, schedule, door, status, created_at }));
     const sent = this.replies.filter((r) => r.token === p_token).map((r) => {
       const p = this.posts.find((x) => x.id === r.post_id);
-      return { id: r.id, post_id: r.post_id, to: p ? p.name : '', sport: p ? p.sport : '', note: r.note, created_at: r.created_at, open: Boolean(p && p.status === 'open') };
+      return { id: r.id, post_id: r.post_id, to: p ? p.name : '', sport: p ? p.sport : '', note: r.note, created_at: r.created_at, open: Boolean(p && p.status === 'open'), seen: r.seen };
     });
     return { posts, suggestions, sent };
   }
@@ -134,6 +134,17 @@ export class FakeBackend {
     this.checkToken(p_token);
     const mine = new Set(this.posts.filter((p) => p.token === p_token).map((p) => p.id));
     return { unseen: this.replies.filter((r) => mine.has(r.post_id) && !r.seen).length };
+  }
+
+  // "Still looking": restart the 14 days, only inside the last week
+  op_renew({ p_post, p_token }) {
+    this.checkToken(p_token);
+    this.sweep();
+    const post = this.posts.find((p) => p.id === p_post && p.token === p_token);
+    if (!post || post.status !== 'open') throw new BackendError('not_found');
+    if (this.now() - Date.parse(post.created_at) < (POST_DAYS - RENEW_WITHIN_DAYS) * DAY) throw new BackendError('too_soon');
+    post.created_at = this.iso();
+    return {};
   }
 
   op_close({ p_post, p_token }) {
