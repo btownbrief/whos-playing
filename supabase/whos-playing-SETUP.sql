@@ -205,9 +205,11 @@ begin
   v_name := wp_clean(p_post->>'name', 24);
   v_note := wp_clean(p_post->>'note', 140);
   v_email := lower(btrim(coalesce(p_post->>'email', '')));
-  select coalesce(array_agg(distinct t), '{}') into v_times
-    from jsonb_array_elements_text(coalesce(p_post->'times', '[]'::jsonb)) t
-   where t in ('wk-am','wk-day','wk-pm','weekend');
+  -- canonical order (mornings → weekends), deduped, unknown values dropped —
+  -- the same order core.js TIMES uses, so the card reads the same everywhere
+  select coalesce(array_agg(c.k order by c.ord), '{}') into v_times
+    from (values ('wk-am', 1), ('wk-day', 2), ('wk-pm', 3), ('weekend', 4)) c(k, ord)
+   where c.k in (select jsonb_array_elements_text(coalesce(p_post->'times', '[]'::jsonb)));
   if not wp_valid_sport(v_sport) or v_level < 0 or v_level >= wp_level_count(v_sport)
      or v_intent not in ('casual','compete','practice','company')
      or not wp_valid_place(v_place) or cardinality(v_times) = 0
