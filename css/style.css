@@ -1,44 +1,50 @@
 /* Who's Playing — one accent, system type, grouped surfaces. Every color is
    a token; dark mode only swaps tokens. */
+/* Who's Playing — the City Guide's materials: warm paper, navy ink, lake
+   teal, Instrument Serif over DM Sans — and a seasonal photo masthead that
+   the page rides up into. Every color is a token; dark mode only swaps tokens. */
 :root {
-  --bg: #ffffff;
-  --group: #f2f2f7;
-  --card: #ffffff;
-  --line: #e3e3e8;
-  --ink: #0b0b0f;
-  --ink-2: #6e6e73;
-  --ink-3: #a1a1a6;
-  --accent: #146fe6;
-  --accent-ink: #ffffff;
-  --pill: #0b0b0f;
-  --pill-ink: #ffffff;
-  --ok: #2f9e5f;
-  --warn: #c98a1b;
-  --bad: #d0453c;
-  --shadow: 0 10px 30px rgba(0, 0, 0, .10);
-  --sheet: #ffffff;
+  --bg: #FBF8F2;
+  --group: #F1ECE3;
+  --card: #FFFFFF;
+  --line: #E4DED3;
+  --ink: #13243B;
+  --ink-2: #4A5B70;
+  --ink-3: #8A97A8;
+  --accent: #2E7D8A;
+  --accent-ink: #FFFFFF;
+  --pill: #13243B;
+  --pill-ink: #FBF8F2;
+  --ok: #2E8A5F;
+  --warn: #B8791A;
+  --bad: #C9503F;
+  --shadow: 0 10px 30px rgba(19, 36, 59, .14);
+  --card-shadow: 0 1px 2px rgba(19, 36, 59, .05);
+  --sheet: #FFFFFF;
   --radius: 18px;
-  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Inter, "Segoe UI", Roboto, Arial, sans-serif;
+  --serif: "Instrument Serif", "Lora", Georgia, "Times New Roman", serif;
+  --sans: "DM Sans", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Inter, "Segoe UI", Roboto, Arial, sans-serif;
   color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #000000;
-    --group: #1c1c1e;
-    --card: #1c1c1e;
-    --line: #2c2c2e;
-    --ink: #f5f5f7;
-    --ink-2: #98989d;
-    --ink-3: #6e6e73;
-    --accent: #5aa2ff;
-    --accent-ink: #04122b;
-    --pill: #f5f5f7;
-    --pill-ink: #0b0b0f;
-    --ok: #4fc27a;
-    --warn: #e0a94a;
-    --bad: #ff6b61;
-    --shadow: 0 10px 30px rgba(0, 0, 0, .5);
-    --sheet: #1c1c1e;
+    --bg: #0A111C;
+    --group: #18233A;
+    --card: #121B2B;
+    --line: #243148;
+    --ink: #F2F0EA;
+    --ink-2: #A9B3C3;
+    --ink-3: #6F7C91;
+    --accent: #62B6C3;
+    --accent-ink: #06202A;
+    --pill: #F2F0EA;
+    --pill-ink: #13243B;
+    --ok: #5FCB8F;
+    --warn: #E0A952;
+    --bad: #F07B6C;
+    --shadow: 0 10px 30px rgba(0, 0, 0, .55);
+    --card-shadow: none;
+    --sheet: #121B2B;
   }
 }
 
@@ -59,13 +65,31 @@ a:hover { text-decoration: underline; }
 
 .wrap { max-width: 640px; margin: 0 auto; padding: 0 18px 140px; }
 
+/* ------------------------------------------------------------ masthead */
+.mast { position: relative; height: 188px; overflow: hidden; background: var(--bg); }
+@media (min-width: 720px) { .mast { height: 250px; } }
+.mast img {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block;
+  animation: mast-in .8s ease-out both;
+}
+@keyframes mast-in { from { opacity: 0; transform: scale(1.03); } to { opacity: 1; transform: none; } }
+.mast::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(19, 36, 59, .10) 0%, rgba(19, 36, 59, 0) 42%, var(--bg) 100%);
+}
+.mast .credit {
+  position: absolute; right: 12px; top: 10px; z-index: 1; font-size: 11px; letter-spacing: .04em; text-transform: uppercase;
+  color: rgba(255, 255, 255, .85); text-shadow: 0 1px 6px rgba(0, 0, 0, .45);
+}
+
 /* ------------------------------------------------------------- header */
 .top {
   display: flex; align-items: flex-end; justify-content: space-between; gap: 12px;
-  padding: 26px 0 10px;
+  margin-top: -34px; position: relative; z-index: 1; padding: 0 0 12px;
 }
-.top h1 { margin: 0; font-size: 34px; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; }
-.top .sub { margin: 4px 0 0; color: var(--ink-2); font-size: 16px; }
+.top h1 { margin: 0; font-family: var(--serif); font-size: 46px; font-weight: 400; letter-spacing: -.01em; line-height: 1; }
+@media (min-width: 720px) { .top h1 { font-size: 56px; } }
+.top .sub { margin: 6px 0 0; color: var(--ink-2); font-size: 16px; }
 .top .mine {
   flex: none; font-size: 16px; font-weight: 600; color: var(--accent);
   padding: 8px 4px 10px; position: relative;
@@ -87,7 +111,7 @@ a:hover { text-decoration: underline; }
 .seg button[aria-pressed="true"] {
   background: var(--card); color: var(--ink); box-shadow: 0 1px 4px rgba(0, 0, 0, .12);
 }
-@media (prefers-color-scheme: dark) { .seg button[aria-pressed="true"] { background: #3a3a3c; box-shadow: none; } }
+@media (prefers-color-scheme: dark) { .seg button[aria-pressed="true"] { background: #25334C; box-shadow: none; } }
 
 /* chips */
 .chips {
@@ -110,7 +134,7 @@ a:hover { text-decoration: underline; }
 .list { display: grid; gap: 12px; margin-top: 6px; }
 .card {
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
-  padding: 15px 16px 13px;
+  padding: 15px 16px 13px; box-shadow: var(--card-shadow);
 }
 .card .who { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .card .name { font-size: 17px; font-weight: 650; }
@@ -151,7 +175,7 @@ a:hover { text-decoration: underline; }
 
 /* empty + status */
 .empty { text-align: center; padding: 54px 20px 24px; color: var(--ink-2); font-size: 16px; }
-.empty strong { display: block; color: var(--ink); font-size: 20px; font-weight: 650; margin-bottom: 6px; letter-spacing: -.01em; }
+.empty strong { display: block; color: var(--ink); font-family: var(--serif); font-size: 26px; font-weight: 400; margin-bottom: 6px; }
 .empty .btn { margin-top: 16px; }
 .status { text-align: center; color: var(--ink-3); font-size: 14px; padding: 18px 0; }
 
@@ -186,11 +210,11 @@ dialog.sheet::backdrop { background: rgba(0, 0, 0, .38); backdrop-filter: blur(6
 }
 @keyframes rise { from { transform: translateY(30px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes pop { from { transform: translate(-50%, -48%); opacity: 0; } to { transform: translate(-50%, -50%); opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .sheet-inner { animation: none; } * { transition: none !important; } }
+@media (prefers-reduced-motion: reduce) { .sheet-inner, .mast img { animation: none; } * { transition: none !important; } }
 .sheet-inner .grab { width: 36px; height: 5px; border-radius: 3px; background: var(--line); margin: 0 auto 10px; }
 @media (min-width: 720px) { .sheet-inner .grab { display: none; } }
 .sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
-.sheet-head h2 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -.015em; }
+.sheet-head h2 { margin: 0; font-family: var(--serif); font-size: 28px; font-weight: 400; letter-spacing: -.01em; }
 .sheet-head .close { color: var(--accent); font-size: 16px; font-weight: 600; padding: 6px 2px; }
 .sheet-sub { margin: 0 0 10px; color: var(--ink-2); font-size: 15px; }
 

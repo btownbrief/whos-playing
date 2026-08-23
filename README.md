@@ -72,6 +72,14 @@ NODE_PATH=/path/to/node_modules node scripts/playtest.mjs   # needs playwright
 
 ## Design rules
 
+- Materials come from the City Guide: warm paper, navy ink, lake teal,
+  Instrument Serif over DM Sans. The masthead photo is one of Stephen's and
+  follows the season (`MASTHEADS` in core.js: Virtue Field at dusk for
+  Apr–Sep, the park in foliage for Oct–Nov, the snowy shoreline at dawn
+  for Dec–Mar); it fades into the page so the board rides up into it.
+  Swap a photo by dropping a ~1600px JPEG into `assets/img/` and pointing
+  the entry at it.
+
 - The board is the home screen. You never answer a question to see what's
   there; filters are chips you *can* touch.
 - Many dimensions, few controls: level, intent, when, where all live on the

@@ -4,7 +4,7 @@
 
 import {
   SPORTS, PICKUP_SPORTS, INTENTS, TIMES, PLACES, DOORS, LIMITS,
-  sportById, sportName, pickupSportName, intentLabel, doorLabel, sportsForMonth,
+  sportById, sportName, pickupSportName, intentLabel, doorLabel, sportsForMonth, mastheadFor,
   validatePost, validateReply, validateSuggestion,
   boardView, pickupView, sportCounts, postMeta, timeAgo, daysLeft,
 } from './core.js';
@@ -495,6 +495,14 @@ async function loadPickup() {
   state.pickup = [...curated, ...live];
   pickupLoading = false;
   render();
+}
+
+// --------------------------------------------------------------- masthead
+{
+  const m = mastheadFor(new Date().getMonth());
+  const img = $('mast-img');
+  img.src = m.src; img.alt = m.alt; img.style.objectPosition = m.focus;
+  $('mast').dataset.season = m.id;
 }
 
 // ------------------------------------------------------------------- wire

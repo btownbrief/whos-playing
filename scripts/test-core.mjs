@@ -7,6 +7,7 @@ import {
   validateSuggestion, boardView, postMeta, timeAgo, daysLeft, sportCounts, POST_DAYS,
 } from '../js/core.js';
 import { FakeBackend, seedDemo } from '../js/fake-backend.js';
+import { mastheadFor, MASTHEADS } from '../js/core.js';
 
 const T0 = Date.parse('2026-08-23T18:00:00Z');
 const tok = (c) => c.repeat(32);
@@ -24,6 +25,15 @@ test('catalog is internally consistent', () => {
     assert.ok(['warm', 'cold', 'all'].includes(s.season));
   }
   assert.ok(PLACES.every((p) => p.length <= 40));
+});
+
+test('masthead follows the season', () => {
+  assert.equal(mastheadFor(0).id, 'winter');
+  assert.equal(mastheadFor(11).id, 'winter');
+  assert.equal(mastheadFor(9).id, 'fall');
+  assert.equal(mastheadFor(6).id, 'summer');
+  assert.equal(mastheadFor(3).id, 'summer');
+  assert.ok(MASTHEADS.every((m) => m.src && m.alt));
 });
 
 test('season ordering leads with the season without hiding anything', () => {

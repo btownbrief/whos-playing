@@ -58,6 +58,7 @@ await p.click('.chip:has-text("All")');
 // ------------------------------------------------------------- post flow
 await p.click('#fab');
 await p.waitForSelector('#sheet-post[open]');
+await p.waitForTimeout(350); // let the sheet finish rising
 await shot(p, '03-post-sheet');
 await p.click('#sheet-post button:has-text("Post it")');
 await p.waitForTimeout(100);
@@ -147,7 +148,7 @@ p = await page({ width: 1280, height: 900 });
 await p.goto(`${base}?demo=1`);
 await p.waitForSelector('.card');
 await shot(p, '13-desktop');
-await p.click('#fab'); await p.waitForSelector('#sheet-post[open]'); await shot(p, '14-desktop-sheet');
+await p.click('#fab'); await p.waitForSelector('#sheet-post[open]'); await p.waitForTimeout(350); await shot(p, '14-desktop-sheet');
 await p.context().close();
 
 // -------------------------------------------- live mode without SQL

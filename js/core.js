@@ -79,6 +79,19 @@ export const PICKUP_SPORTS = [
   { id: 'other', name: 'Other' },
 ];
 
+// The masthead photo follows the season. Photos are Stephen's, from the
+// City Guide; focus = object-position for the crop.
+export const MASTHEADS = [
+  { id: 'winter', src: 'assets/img/shore-winter.jpg', focus: '50% 62%', alt: 'First light over Lake Champlain, snow along the shore' },
+  { id: 'fall',   src: 'assets/img/park-fall.jpg',    focus: '50% 38%', alt: 'Maples in full color over a Burlington park' },
+  { id: 'summer', src: 'assets/img/field-dusk.jpg',   focus: '50% 72%', alt: 'A soccer game under the lights at Virtue Field as the sky goes blue' },
+];
+export function mastheadFor(month) {
+  if (month === 11 || month <= 2) return MASTHEADS[0];
+  if (month === 9 || month === 10) return MASTHEADS[1];
+  return MASTHEADS[2];
+}
+
 export const sportById = (id) => SPORTS.find((s) => s.id === id) || null;
 export const sportName = (id) =>
   (sportById(id) || PICKUP_SPORTS.find((s) => s.id === id) || { name: id }).name;
