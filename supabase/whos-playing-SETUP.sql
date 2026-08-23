@@ -22,9 +22,10 @@
 -- the report threshold, and mod.html stop casual mischief; they do not stop
 -- a determined Sybil. Nothing here is presented as integrity-protected.
 --
--- >>> BEFORE YOU RUN THIS: put a bcrypt HASH of your moderator secret into
--- >>> wp_mod_hash() below (instructions on the function). Until you do,
--- >>> mod.html opens nothing — the gate fails closed on the placeholder.
+-- The moderator secret's bcrypt hash is already in wp_mod_hash() below; the
+-- plaintext secret lives ONLY in ~/.config/btownbrief/secrets.env
+-- (WHOS_PLAYING_MOD_SECRET) and your password manager. Never commit it.
+-- To rotate: make a new hash (instructions on the function) and re-run.
 --
 -- OPTIONAL: deploy supabase/functions/wp-notify (needs a RESEND_API_KEY
 -- secret) and posters who left an email get a plain "someone replied"
@@ -416,7 +417,7 @@ $$;
 -- 3. Paste that result between the quotes below, then run this whole file.
 -- 4. Keep the plaintext in your password manager; mod.html asks for it.
 create or replace function public.wp_mod_hash() returns text
-language sql immutable as $$ select 'CHANGE-ME-PASTE-A-BCRYPT-HASH-HERE'::text; $$;
+language sql immutable as $$ select '$2a$12$CNYzxsdnjRx6yidyIMd6xuDX7V20nQi9qRo4A9u26cZVSsS69MRy6'::text; $$;
 revoke all on function public.wp_mod_hash() from public, anon, authenticated;
 
 -- Wrong guesses are counted; 20 in 15 minutes shuts the gate for everyone
